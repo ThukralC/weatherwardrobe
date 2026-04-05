@@ -3,8 +3,6 @@
 # uses Strategy pattern for scoring items
 
 
-
-
 from factory import ClothingFactory
 from strategy import RecommendationStrategy
 from specification import TempSpec
@@ -148,6 +146,8 @@ def recommend_items(db, weather):
             
 # main function that runs the application flow
 # connects database, gets user input, fetches weather, and shows recommendations
+# this structure improves maintainability by separating database,
+# API, and recommendation logic into different functions
 def main():
     db = init_firestore()
 
