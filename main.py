@@ -1,3 +1,13 @@
+# filters and recommends clothing items based on current weather
+# uses Specification pattern for filtering
+# uses Strategy pattern for scoring items
+
+
+
+
+from factory import ClothingFactory
+from strategy import RecommendationStrategy
+from specification import TempSpec
 from datetime import datetime
 import os
 import firebase_admin
@@ -88,19 +98,83 @@ def read_items(db):
             "| waterproof:",
             data.get("waterproof")
         )
+import requests
+
+def get_weather(city):
+    api_key = os.getenv("OPENWEATHER_API_KEY")
+
+    url = "https://api.openweathermap.org/data/2.5/weather"
+
+    params = {
+        "q": city,
+        "appid": api_key,
+        "units": "metric"
+    }
+
+    response = requests.get(url, params=params)
+    data = response.json()
+
+    # ✅ HANDLE ERROR
+    if response.status_code != 200:
+        print("\nError fetching weather:", data.get("message"))
+        return None
+
+    return {
+        "temp": data["main"]["temp"],
+        "condition": data["weather"][0]["main"],
+        "wind": data["wind"]["speed"]
+    }
 
 
+def recommend_items(db, weather):
+    # create pattern objects
+    docs = db.collection("wardrobe_items").stream()
+
+    # create pattern objects
+    spec = TempSpec()
+    strategy = RecommendationStrategy()
+    factory = ClothingFactory()
+
+    print("\nRecommended Items:")
+
+    for d in docs:
+        item = d.to_dict()
+        item = factory.create(item)
+
+        if spec.is_satisfied(item, weather):
+            score = strategy.score(item, weather)
+            print(item["name"], "|", item["category"], "| score:", score)
+            
+            
+# main function that runs the application flow
+# connects database, gets user input, fetches weather, and shows recommendations
 def main():
     db = init_firestore()
 
-    new_ids = add_sample_items(db)
-
-    print("Added items:")
-    for i in new_ids:
-        print("-", i)
-
+    add_sample_items(db)
     read_items(db)
+    
+# ask user to enter city name
+    city = input("\nEnter city: ")
 
+# fetch weather from API
+    weather = get_weather(city)
+    
+    # if API failed, stop execution
+    if weather is None:
+        print("Try another city or check your API key.")
+        return
+    
+    
+    # display weather information
+    print("\nWeather:")
+    print("Temp:", weather["temp"])
+    print("Condition:", weather["condition"])
+    print("Wind:", weather["wind"])
+
+# generate outfit recommendations based on weather
+
+    recommend_items(db, weather)
 
 if __name__ == "__main__":
     main()
