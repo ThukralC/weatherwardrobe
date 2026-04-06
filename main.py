@@ -112,7 +112,7 @@ def get_weather(city):
     response = requests.get(url, params=params)
     data = response.json()
 
-    # ✅ HANDLE ERROR
+    #  HANDLE ERROR
     if response.status_code != 200:
         print("\nError fetching weather:", data.get("message"))
         return None
@@ -151,7 +151,7 @@ def recommend_items(db, weather):
 def main():
     db = init_firestore()
 
-    add_sample_items(db)
+# add_sample_items(db)
     read_items(db)
     
 # ask user to enter city name
